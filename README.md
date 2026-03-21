@@ -9,144 +9,83 @@
 
 ### 用户端
 
-- 🔐 **OAuth2 登录/注册** - 对接 Authentik，支持 OpenID Connect
-- 📺 **直播播放** - 自动获取在线直播流，支持 FLV/HLS/WebRTC 格式选择
-- 🔒 **加密直播** - 支持直播流加密，需鉴权或输入密钥
-- 💬 **实时弹幕** - WebSocket 实时聊天，需登录后发送
+- 🔐 **OAuth2 登录/注册** — 对接 Authentik，支持 OpenID Connect
+- 📺 **直播播放** — 自动获取在线直播流，支持 FLV/HLS/WebRTC 格式选择
+- 🔒 **加密直播** — 支持直播流加密，需鉴权或输入密钥
+- 💬 **实时弹幕** — WebSocket 实时聊天，需登录后发送
 
 ### 管理端
 
-- 👥 **用户管理** - 查看用户列表、封禁/解封用户
-- 📡 **直播管理** - 配置直播流加密、鉴权
-- 🖥️ **Oryx 控制** - 完整的 Oryx/SRS 管理
-  - 客户端管理（查看/踢出）
-  - 录制 (DVR) 配置
-  - HLS 配置
-  - 转推/转发配置
-  - 转码配置
-  - HTTP 回调配置
-- 🌐 **CDN 支持** - 配置 CDN 拉流地址
+- 👥 **用户管理** — 查看用户列表、封禁/解封用户
+- 📡 **直播管理** — 配置直播流加密、鉴权
+- 🖥️ **Oryx 控制** — 完整的 Oryx/SRS 管理（客户端、DVR、HLS、转推、转码、回调等）
+- 🌐 **CDN 支持** — 配置 CDN 拉流地址
 
 ## 技术栈
 
 | 组件     | 技术                                        |
 | -------- | ------------------------------------------- |
-| 前端     | React 19 + TypeScript + Vite + Ant Design 6 |
+| 前端     | React 19 + TypeScript + Vite 8 + Ant Design 6 |
 | 播放器   | ArtPlayer + mpegts.js + hls.js              |
-| 后端     | Python 3.12 + FastAPI + SQLAlchemy          |
+| 后端     | Python 3.12 + FastAPI + SQLAlchemy 2.0      |
 | 数据库   | SQLite (可换 PostgreSQL)                    |
 | 实时通信 | WebSocket                                   |
 | 认证     | OAuth2 / OpenID Connect (Authentik)         |
 | 容器     | Docker + Docker Compose                     |
-| CI/CD    | GitHub Actions                              |
 
 ## 快速开始
 
-### 前提条件
-
-- Node.js 22+ / pnpm
-- Python 3.12+ / [uv](https://docs.astral.sh/uv/)
-- Authentik OAuth2 应用配置
-- Oryx/SRS 服务运行中
-
-### 开发环境
-
-**1. 后端**
-
 ```bash
-cd backend
-cp .env.example .env
-# 编辑 .env 填入你的配置
+# 克隆项目
+git clone https://github.com/your-username/oryx-live-center.git
+cd oryx-live-center
 
-uv sync --extra dev
-uv run uvicorn app.main:app --reload --port 8000
-```
-
-**2. 前端**
-
-```bash
-cd frontend
-pnpm install
-pnpm dev
-```
-
-前端开发服务器运行在 `http://localhost:5173`，API 请求自动代理到后端 `http://localhost:8000`。
-
-### Docker 部署
-
-```bash
-# 创建 .env 文件
+# 配置环境变量
 cp backend/.env.example .env
-# 编辑 .env 填入你的配置
+# 编辑 .env 填入你的 OAuth2 和 Oryx 配置
 
-# 构建并启动
+# Docker 一键启动
 docker compose up -d
 ```
 
-服务运行在 `http://localhost:8000`。
+访问 `http://localhost:3000`。
 
-## 配置说明
+> 详细的本地开发和生产部署步骤请参阅 [快速开始文档](docs/getting-started.md)。
 
-### Authentik OAuth2 配置
+## 📖 文档
 
-1. 在 Authentik 中创建一个 OAuth2/OpenID Connect Provider
-2. 配置 Redirect URI: `http://your-domain/auth/callback`
-3. 确保 Scope 包含: `openid profile email`
-4. 创建一个 Group 用于管理员（默认名: `oryx-admin`）
-5. 将管理员用户加入该组
-
-### 环境变量
-
-参见 [backend/.env.example](backend/.env.example) 获取完整配置列表。
-
-关键配置：
-
-| 变量                   | 说明                           |
-| ---------------------- | ------------------------------ |
-| `OAUTH2_CLIENT_ID`     | Authentik OAuth2 Client ID     |
-| `OAUTH2_CLIENT_SECRET` | Authentik OAuth2 Client Secret |
-| `OAUTH2_AUTHORIZE_URL` | 授权端点                       |
-| `OAUTH2_TOKEN_URL`     | Token 端点                     |
-| `OAUTH2_USERINFO_URL`  | UserInfo 端点                  |
-| `OAUTH2_ADMIN_GROUP`   | 管理员组名                     |
-| `ORYX_API_URL`         | Oryx/SRS API 地址              |
-| `ORYX_HTTP_URL`        | Oryx HTTP 流地址               |
-| `CDN_BASE_URL`         | CDN 基础 URL（可选）           |
+| 文档 | 说明 |
+| --- | --- |
+| [快速开始](docs/getting-started.md) | 本地开发环境搭建与 Docker 部署 |
+| [配置说明](docs/configuration.md) | 环境变量完整列表与 Authentik 配置指南 |
+| [架构设计](docs/architecture.md) | 系统架构图、技术选型与模块说明 |
+| [API 文档](docs/api-reference.md) | REST API 与 WebSocket 接口参考 |
+| [开发指南](docs/development.md) | 编码规范、项目结构与贡献指南 |
+| [部署指南](docs/deployment.md) | 生产部署、Nginx 配置、CDN、备份与安全 |
 
 ## 项目结构
 
 ```
 oryx-live-center/
-├── backend/
+├── backend/                 # Python 后端 (FastAPI)
 │   ├── app/
-│   │   ├── routers/        # API 路由
-│   │   │   ├── auth.py     # OAuth2 认证
-│   │   │   ├── chat.py     # 弹幕/聊天 WebSocket
-│   │   │   ├── streams.py  # 直播流管理
-│   │   │   └── admin.py    # 管理后台 API
-│   │   ├── auth.py         # 认证工具
-│   │   ├── config.py       # 配置
-│   │   ├── database.py     # 数据库
-│   │   ├── main.py         # 入口
-│   │   ├── models.py       # 数据模型
-│   │   └── schemas.py      # Pydantic Schema
-│   ├── .env.example
+│   │   ├── routers/         # API 路由 (auth/chat/streams/admin)
+│   │   ├── main.py          # 入口 + 媒体流反向代理
+│   │   ├── config.py        # pydantic-settings 配置
+│   │   ├── models.py        # SQLAlchemy ORM 模型
+│   │   └── schemas.py       # Pydantic Schema
 │   └── pyproject.toml
-├── frontend/
+├── frontend/                # React 前端
 │   ├── src/
-│   │   ├── components/     # 通用组件
-│   │   ├── pages/          # 页面
-│   │   │   └── admin/      # 管理后台页面
-│   │   ├── store/          # 状态管理
-│   │   ├── api.ts          # API 层
-│   │   ├── types.ts        # 类型定义
-│   │   └── App.tsx         # 路由配置
-│   ├── package.json
+│   │   ├── components/      # 播放器、弹幕、布局组件
+│   │   ├── pages/           # 首页 + 管理后台页面
+│   │   ├── api.ts           # API 客户端
+│   │   └── store/           # 认证状态管理
 │   └── vite.config.ts
-├── .github/workflows/ci.yml
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+├── docs/                    # 详细文档
+├── Dockerfile               # 多阶段构建
+├── docker-compose.yml       # 服务编排
+└── .env                     # 环境变量（从 .env.example 复制）
 ```
 
 ## License
