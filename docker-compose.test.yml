@@ -1,0 +1,98 @@
+# ============================================================
+# Docker Compose — 测试环境 (含 Mock OAuth2)
+#
+# 使用方式:
+#   docker compose -f docker-compose.test.yml up -d --build
+#
+# 包含服务:
+#   - app        (Oryx Live Center)  → http://localhost:3000
+#   - mock-oauth (Mock OAuth2 服务)  → http://localhost:9000
+#   - oryx       (Oryx/SRS 流媒体)  → rtmp://localhost:1935
+#   - redis
+# ============================================================
+
+version: "3.8"
+
+services:
+  mock-oauth:
+    build: ./mock-oauth
+    container_name: oryx-live-center-mock-oauth
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+
+  app:
+    build: .
+    container_name: oryx-live-center
+    restart: unless-stopped
+    ports:
+      - "3000:8000"
+    volumes:
+      - app-data:/app/data
+    environment:
+      # App
+      - APP_NAME=Oryx Live Center (Test)
+      - APP_SECRET_KEY=test-secret-key-not-for-production
+      - DEBUG=true
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+
+      # Database
+      - DATABASE_URL=sqlite+aiosqlite:///./data/app.db
+
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+
+      # OAuth2 — 指向 Mock OAuth2 服务
+      - OAUTH2_CLIENT_ID=test-client
+      - OAUTH2_CLIENT_SECRET=test-secret
+      - OAUTH2_AUTHORIZE_URL=http://localhost:9000/authorize
+      - OAUTH2_TOKEN_URL=http://mock-oauth:9000/token
+      - OAUTH2_USERINFO_URL=http://mock-oauth:9000/userinfo
+      - OAUTH2_LOGOUT_URL=http://localhost:9000/end-session
+      - OAUTH2_REDIRECT_URI=http://localhost:3000/auth/callback
+      - OAUTH2_SCOPE=openid profile email
+      - OAUTH2_ADMIN_GROUP=oryx-admin
+
+      # Oryx
+      - ORYX_API_URL=http://oryx:2022
+      - ORYX_HTTP_URL=http://oryx:2022
+
+      # JWT
+      - JWT_SECRET=test-jwt-secret-not-for-production
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRE_MINUTES=1440
+
+      # CDN (留空)
+      - CDN_BASE_URL=
+      - CDN_PULL_SECRET=
+    depends_on:
+      - redis
+      - oryx
+      - mock-oauth
+
+  oryx:
+    image: registry.cn-hangzhou.aliyuncs.com/ossrs/oryx:5
+    container_name: oryx-live-center-oryx
+    restart: unless-stopped
+    ports:
+      - "1935:1935"       # RTMP push
+      - "8000:8000/udp"   # WebRTC UDP
+      - "10080:10080/udp" # SRT UDP
+    volumes:
+      - oryx-data:/data
+    environment:
+      - CANDIDATE=${CANDIDATE:-127.0.0.1}
+      - REACT_APP_LOCALE=zh
+      - MGMT_PASSWORD=test-password
+
+  redis:
+    image: redis:7-alpine
+    container_name: oryx-live-center-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+volumes:
+  app-data:
+  redis-data:
+  oryx-data:
