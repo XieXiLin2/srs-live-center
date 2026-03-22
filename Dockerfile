@@ -26,6 +26,9 @@ COPY backend/pyproject.toml ./
 COPY backend/app ./app
 RUN uv sync --no-dev
 
+# Add virtual environment to PATH
+ENV PATH="/app/.venv/bin:$PATH"
+
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/dist ./static
 

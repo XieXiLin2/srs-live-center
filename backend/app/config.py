@@ -31,7 +31,8 @@ class Settings(BaseSettings):
 
     # Oryx (all-in-one, port 2022 is the main entry)
     oryx_api_url: str = "http://localhost:2022"
-    oryx_api_secret: str = ""
+    oryx_api_secret: str = ""  # Auto-populated at startup via login
+    oryx_mgmt_password: str = ""  # Oryx MGMT_PASSWORD for auto-login
     oryx_http_url: str = "http://localhost:2022"
 
     # CDN

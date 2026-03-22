@@ -24,12 +24,49 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _login_to_oryx(max_retries: int = 10, delay: float = 3.0) -> None:
+    """Login to Oryx using MGMT_PASSWORD to obtain the Bearer API secret.
+
+    Oryx does not accept MGMT_PASSWORD directly as a Bearer token.
+    We must call /terraform/v1/mgmt/login with the password to get
+    the real API secret (SRS_PLATFORM_SECRET) for subsequent requests.
+    """
+    if not settings.oryx_mgmt_password:
+        logger.info("No ORYX_MGMT_PASSWORD configured, skipping Oryx login")
+        return
+
+    import asyncio
+
+    login_url = f"{settings.oryx_api_url}/terraform/v1/mgmt/login"
+    for attempt in range(1, max_retries + 1):
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(login_url, json={"password": settings.oryx_mgmt_password})
+                resp.raise_for_status()
+                data = resp.json()
+                bearer = data.get("data", {}).get("bearer", "")
+                if bearer:
+                    settings.oryx_api_secret = bearer
+                    logger.info("Oryx login successful, obtained API bearer token")
+                    return
+                else:
+                    logger.warning(f"Oryx login response missing bearer (attempt {attempt}/{max_retries})")
+        except Exception as e:
+            logger.warning(f"Oryx login attempt {attempt}/{max_retries} failed: {e}")
+
+        if attempt < max_retries:
+            await asyncio.sleep(delay)
+
+    logger.error("Failed to login to Oryx after all retries. API calls to Oryx will fail.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan - startup and shutdown."""
     logger.info(f"Starting {settings.app_name}")
     await init_db()
     logger.info("Database initialized")
+    await _login_to_oryx()
     yield
     logger.info(f"Shutting down {settings.app_name}")
 

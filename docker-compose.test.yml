@@ -11,8 +11,6 @@
 #   - redis
 # ============================================================
 
-version: "3.8"
-
 services:
   mock-oauth:
     build: ./mock-oauth
@@ -56,6 +54,7 @@ services:
       # Oryx
       - ORYX_API_URL=http://oryx:2022
       - ORYX_HTTP_URL=http://oryx:2022
+      - ORYX_MGMT_PASSWORD=test-password
 
       # JWT
       - JWT_SECRET=test-jwt-secret-not-for-production
