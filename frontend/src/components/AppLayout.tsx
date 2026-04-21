@@ -62,7 +62,7 @@ const AppLayout: React.FC = () => {
         <Space>
           <PlayCircleOutlined style={{ fontSize: 24, color: themeToken.colorPrimary }} />
           <Text strong style={{ fontSize: 18 }}>
-            SRS Live Center
+            Ayumu Live Center
           </Text>
           <Menu
             mode="horizontal"
@@ -98,7 +98,7 @@ const AppLayout: React.FC = () => {
       </Content>
 
       <Footer style={{ textAlign: 'center', color: themeToken.colorTextSecondary }}>
-        SRS Live Center ©{new Date().getFullYear()}
+        Ayumu Network & XieXiLin &copy; 2021-{new Date().getFullYear()}. All rights reserved.
       </Footer>
     </Layout>
   );
