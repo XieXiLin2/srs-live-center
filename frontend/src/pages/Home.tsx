@@ -53,6 +53,14 @@ const Home: React.FC = () => {
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [watchToken, setWatchToken] = useState('');
   const [stats, setStats] = useState<StreamStats | null>(null);
+  // Ticks every second so the "已开播时长" display smoothly advances between
+  // the 10-second stats polls, instead of jumping in big steps.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Optional deep link: /?room=<stream_name>&token=<watch_token>
   const initialRoom = searchParams.get('room') || '';
@@ -256,12 +264,28 @@ const Home: React.FC = () => {
                   </Text>
                   {stats && (
                     <>
-                      <Text type="secondary">
-                        峰值 {stats.peak_session_viewers}
-                      </Text>
-                      <Text type="secondary">
-                        累计 {stats.total_plays} 次观看 · 总时长 {formatDuration(stats.total_watch_seconds)}
-                      </Text>
+                      <Text type="secondary">峰值 {stats.peak_session_viewers}</Text>
+                      {stats.is_live && stats.current_session_started_at ? (
+                        <Text type="secondary">
+                          已开播{' '}
+                          {formatDuration(
+                            // Smoothly advance with the 1s `nowTick` instead of
+                            // waiting for the next 10s poll. Fall back to the
+                            // server-reported value on clock skew.
+                            Math.max(
+                              stats.current_live_duration_seconds,
+                              Math.floor(
+                                (nowTick -
+                                  new Date(stats.current_session_started_at).getTime()) /
+                                  1000,
+                              ),
+                            ),
+                          )}
+                        </Text>
+                      ) : (
+                        <Text type="secondary">未开播</Text>
+                      )}
+                      <Text type="secondary">累计 {stats.total_plays} 次观看</Text>
                     </>
                   )}
                   {selectedStream.video_codec && <Tag>{selectedStream.video_codec}</Tag>}

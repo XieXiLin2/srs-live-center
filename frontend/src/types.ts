@@ -129,6 +129,10 @@ export interface StreamStats {
   unique_logged_in_viewers: number;
   /** Peak concurrent viewers observed during the current live session. */
   peak_session_viewers: number;
+  /** Seconds the current broadcast has been live; 0 when offline. */
+  current_live_duration_seconds: number;
+  /** Lifetime broadcast time across all past + current publish sessions. */
+  total_live_seconds: number;
   last_publish_at: string | null;
   last_unpublish_at: string | null;
   /** When the currently-active publisher started (null if offline). */

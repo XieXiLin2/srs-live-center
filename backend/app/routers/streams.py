@@ -199,6 +199,25 @@ async def get_stream_stats(
     live_rows = await srs_client.list_streams()
     is_live = any(r.get("name") == stream_name for r in live_rows)
 
+    # Current session duration ("已开播时长"): how long the *current* broadcast
+    # has been running. 0 when offline.
+    import datetime as _dt
+    current_live_duration_seconds = 0
+    if active_pub is not None and active_pub.started_at is not None:
+        now = _dt.datetime.now(_dt.timezone.utc)
+        # Normalize tz-naive SQLite rows (SQLite stores as naive UTC).
+        started = active_pub.started_at
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=_dt.timezone.utc)
+        current_live_duration_seconds = max(0, int((now - started).total_seconds()))
+
+    # Lifetime broadcast time — all completed publish sessions plus current one.
+    total_live_q = await db.execute(
+        select(func.coalesce(func.sum(StreamPublishSession.duration_seconds), 0))
+        .where(StreamPublishSession.stream_name == stream_name)
+    )
+    total_live_seconds = int(total_live_q.scalar() or 0) + current_live_duration_seconds
+
     return {
         "stream_name": stream_name,
         "display_name": cfg.display_name or stream_name,
@@ -208,6 +227,10 @@ async def get_stream_stats(
         "total_watch_seconds": total_watch_seconds,
         "unique_logged_in_viewers": unique_logged_in_viewers,
         "peak_session_viewers": peak_concurrent,
+        # How long the *current* broadcast has been live (0 if offline).
+        "current_live_duration_seconds": current_live_duration_seconds,
+        # Total lifetime broadcast seconds (sum of all publish sessions).
+        "total_live_seconds": total_live_seconds,
         "last_publish_at": cfg.last_publish_at.isoformat() if cfg.last_publish_at else None,
         "last_unpublish_at": cfg.last_unpublish_at.isoformat() if cfg.last_unpublish_at else None,
         "current_session_started_at": active_pub.started_at.isoformat() if active_pub else None,
