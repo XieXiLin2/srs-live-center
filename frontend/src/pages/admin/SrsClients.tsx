@@ -13,7 +13,9 @@ interface SrsClientRow {
   stream?: string;
   ip?: string;
   alive?: number;
-  publish?: { active?: boolean };
+  // SRS may return either a boolean or an object like {active: bool} depending
+  // on the version. We accept both shapes.
+  publish?: boolean | { active?: boolean };
 }
 type SrsClientListResponse = { clients?: SrsClientRow[] };
 
@@ -64,10 +66,23 @@ const SrsClients: React.FC = () => {
           { title: '流', render: (_, r) => `${r.vhost || ''}/${r.app || ''}/${r.stream || ''}` },
           { title: 'IP', dataIndex: 'ip' },
           {
-            title: '协议',
+            title: '角色',
             dataIndex: 'publish',
-            render: (p: SrsClientRow['publish']) =>
-              p?.active ? <Tag color="green">推流</Tag> : <Tag color="blue">播放</Tag>,
+            render: (p: SrsClientRow['publish'], r) => {
+              // Truth table for "this client is a publisher":
+              //   publish === true                  → publisher
+              //   publish === { active: true }       → publisher
+              //   type contains "publish"            → publisher (older SRS)
+              const isPublisher =
+                p === true ||
+                (typeof p === 'object' && p !== null && p.active === true) ||
+                (typeof r.type === 'string' && r.type.toLowerCase().includes('publish'));
+              return isPublisher ? (
+                <Tag color="green">推流</Tag>
+              ) : (
+                <Tag color="blue">播放</Tag>
+              );
+            },
           },
           {
             title: '时长',
