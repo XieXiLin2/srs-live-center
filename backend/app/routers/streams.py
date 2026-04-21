@@ -348,8 +348,40 @@ async def list_stream_configs(
     db: AsyncSession = Depends(get_db),
     _admin: User = Depends(require_admin),
 ) -> list[StreamConfigResponse]:
+    """List all stream configs.
+
+    The DB-stored ``viewer_count`` / ``total_play_count`` columns are legacy
+    fields fed by the old SRS-hook flow. To stay consistent with the new
+    WS-driven analytics (see ``routers/viewer.py``) we **override** them on
+    the way out using live aggregations over ``ViewerSession``:
+
+    * ``viewer_count``     ← currently-open viewer sessions per stream
+    * ``total_play_count`` ← lifetime ``ViewerSession`` rows per stream
+    """
     result = await db.execute(select(StreamConfig).order_by(StreamConfig.stream_name))
-    return [StreamConfigResponse.model_validate(c) for c in result.scalars().all()]
+    configs = list(result.scalars().all())
+
+    # Single roundtrip each — much cheaper than per-row subqueries.
+    open_q = await db.execute(
+        select(ViewerSession.stream_name, func.count(ViewerSession.id))
+        .where(ViewerSession.ended_at.is_(None))
+        .group_by(ViewerSession.stream_name)
+    )
+    open_map: dict[str, int] = {name: int(cnt) for name, cnt in open_q.all()}
+
+    total_q = await db.execute(
+        select(ViewerSession.stream_name, func.count(ViewerSession.id))
+        .group_by(ViewerSession.stream_name)
+    )
+    total_map: dict[str, int] = {name: int(cnt) for name, cnt in total_q.all()}
+
+    out: list[StreamConfigResponse] = []
+    for c in configs:
+        item = StreamConfigResponse.model_validate(c)
+        item.viewer_count = open_map.get(c.stream_name, 0)
+        item.total_play_count = total_map.get(c.stream_name, item.total_play_count)
+        out.append(item)
+    return out
 
 
 @router.put("/config/{stream_name}", response_model=StreamConfigResponse)

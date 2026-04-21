@@ -130,13 +130,19 @@ const StreamsManage: React.FC = () => {
           {
             title: '密钥',
             render: (_, r) => (
+              // Public rooms don't consume `watch_token` for playback, so we
+              // omit it to reduce clutter. The value is still stored server-
+              // side so it can be reused immediately if the room is later
+              // flipped to private.
               <Space direction="vertical" size={2}>
                 <Text copyable={{ text: r.publish_secret }} style={{ fontSize: 12 }}>
                   推流: <code>{r.publish_secret?.slice(0, 8)}…</code>
                 </Text>
-                <Text copyable={{ text: r.watch_token }} style={{ fontSize: 12 }}>
-                  Token: <code>{r.watch_token?.slice(0, 8)}…</code>
-                </Text>
+                {r.is_private && (
+                  <Text copyable={{ text: r.watch_token }} style={{ fontSize: 12 }}>
+                    Token: <code>{r.watch_token?.slice(0, 8)}…</code>
+                  </Text>
+                )}
               </Space>
             ),
           },
@@ -159,9 +165,12 @@ const StreamsManage: React.FC = () => {
                 <Popconfirm title="轮换推流密钥?" onConfirm={() => rotateSecret(r.stream_name)}>
                   <Button size="small">换推流密钥</Button>
                 </Popconfirm>
-                <Popconfirm title="轮换观看 Token?" onConfirm={() => rotateToken(r.stream_name)}>
-                  <Button size="small">换 Token</Button>
-                </Popconfirm>
+                {/* 观看 Token 仅对私有房间有意义，公开房间不展示以免误导。 */}
+                {r.is_private && (
+                  <Popconfirm title="轮换观看 Token?" onConfirm={() => rotateToken(r.stream_name)}>
+                    <Button size="small">换 Token</Button>
+                  </Popconfirm>
+                )}
                 <Popconfirm title="删除此直播间?" onConfirm={() => del(r.stream_name)}>
                   <Button size="small" danger icon={<DeleteOutlined />} />
                 </Popconfirm>
@@ -206,8 +215,21 @@ const StreamsManage: React.FC = () => {
           <Form.Item name="publish_secret" label="推流密钥（留空自动生成）">
             <Input.Password />
           </Form.Item>
-          <Form.Item name="watch_token" label="观看 Token（私有流使用；留空自动生成）">
-            <Input.Password />
+          {/*
+            Watch token is only relevant for private rooms; hide the input
+            unless the "private" switch is on so admins aren't confused.
+          */}
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, cur) => prev.is_private !== cur.is_private}
+          >
+            {({ getFieldValue }) =>
+              getFieldValue('is_private') ? (
+                <Form.Item name="watch_token" label="观看 Token（私有流使用；留空自动生成）">
+                  <Input.Password />
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
         </Form>
       </Modal>
