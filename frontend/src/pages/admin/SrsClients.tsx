@@ -5,6 +5,28 @@ import { adminApi } from '../../api';
 
 const { Title } = Typography;
 
+/**
+ * Render a duration in seconds (possibly fractional) as a human-friendly
+ * string. SRS returns `alive` in seconds; we show the most meaningful
+ * two-unit combination (e.g. "1h 23m", "12m 5s", "3s").
+ */
+function formatAlive(secondsLike?: number): string {
+  if (secondsLike === undefined || secondsLike === null) return '—';
+  const total = Math.floor(Number(secondsLike));
+  if (!Number.isFinite(total) || total < 0) return '—';
+  if (total < 1) return '<1s';
+
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  if (m > 0) return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  return `${s}s`;
+}
+
 interface SrsClientRow {
   id: string;
   type?: string;
@@ -87,7 +109,9 @@ const SrsClients: React.FC = () => {
           {
             title: '时长',
             dataIndex: 'alive',
-            render: (v?: number) => (v ? `${Math.floor(v)}s` : '—'),
+            width: 110,
+            sorter: (a, b) => (a.alive ?? 0) - (b.alive ?? 0),
+            render: (v?: number) => formatAlive(v),
           },
           {
             title: '操作',

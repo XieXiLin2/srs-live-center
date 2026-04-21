@@ -114,14 +114,17 @@ const Home: React.FC = () => {
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Resolve the token the backend expects for room access:
-    //   * public room     — omit
-    //   * private + login — JWT (authToken)
-    //   * private + guest — watch token from URL (?token=...)
+    // Resolve the token the backend expects for room access.
+    //
+    // We always prefer the user's JWT when they're logged in — even for
+    // public rooms — so the ViewerSession is attributed to their user_id
+    // (otherwise the admin "viewer sessions" page would show them as 游客).
+    // For non-logged-in viewers of a private room, fall back to the
+    // ?token=<watch_token> deep-link param.
     const resolveTokenForRoom = (): string => {
-      if (!stream.is_private) return '';
       if (authToken) return authToken;
-      return searchParams.get('token') || '';
+      if (stream.is_private) return searchParams.get('token') || '';
+      return '';
     };
 
     const connect = () => {
