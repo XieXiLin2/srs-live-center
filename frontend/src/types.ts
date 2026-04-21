@@ -148,3 +148,31 @@ export interface StreamPublishSessionItem {
   ended_at: string | null;
   duration_seconds: number;
 }
+
+export interface ViewerSessionItem {
+  id: number;
+  session_key: string;
+  stream_name: string;
+  user_id: number | null;
+  client_ip: string;
+  user_agent: string;
+  started_at: string;
+  last_heartbeat_at: string;
+  ended_at: string | null;
+  duration_seconds: number;
+}
+
+export interface ViewerSessionListResponse {
+  items: ViewerSessionItem[];
+  total: number;
+}
+
+export interface ViewerSessionsQuery {
+  stream_name?: string;
+  user_id?: number;
+  started_after?: string;
+  started_before?: string;
+  only_ended?: boolean;
+  limit?: number;
+  offset?: number;
+}

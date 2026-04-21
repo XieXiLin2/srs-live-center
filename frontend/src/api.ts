@@ -12,6 +12,8 @@ import type {
   TokenResponse,
   User,
   UserListResponse,
+  ViewerSessionListResponse,
+  ViewerSessionsQuery,
 } from './types';
 
 const api = axios.create({
@@ -116,6 +118,62 @@ export const adminApi = {
         params: { stream_name, limit, offset },
       })
       .then((r) => r.data),
+
+  // Viewer sessions (WS-driven playback history, the primary analytics source)
+  getViewerSessions: (params: ViewerSessionsQuery = {}) =>
+    api
+      .get<ViewerSessionListResponse>('/admin/stats/viewer-sessions', {
+        params: { limit: 50, offset: 0, ...params },
+      })
+      .then((r) => r.data),
+  getViewerSessionsSummary: (
+    params: Pick<ViewerSessionsQuery, 'stream_name' | 'started_after' | 'started_before'> = {},
+  ) =>
+    api
+      .get<{
+        stream_name: string | null;
+        started_after: string | null;
+        started_before: string | null;
+        total_sessions: number;
+        total_watch_seconds: number;
+        unique_logged_in_viewers: number;
+        per_stream: Array<{ stream_name: string; sessions: number; watch_seconds: number }>;
+      }>('/admin/stats/viewer-sessions/summary', { params })
+      .then((r) => r.data),
+  /**
+   * Download viewer-sessions CSV via authenticated fetch + Blob.
+   * (A plain `<a href download>` won't carry the Bearer header.)
+   */
+  downloadViewerSessionsCsv: async (params: ViewerSessionsQuery = {}): Promise<void> => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v === undefined || v === null || v === '') return;
+      qs.append(k, String(v));
+    });
+    const url = `/api/admin/stats/viewer-sessions.csv${qs.toString() ? `?${qs.toString()}` : ''}`;
+    const token = localStorage.getItem('token');
+    const resp = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!resp.ok) {
+      throw new Error(`CSV 下载失败: HTTP ${resp.status}`);
+    }
+    const blob = await resp.blob();
+    // Try to honor server-provided filename; fall back to a sane default.
+    const cd = resp.headers.get('Content-Disposition') || '';
+    const m = /filename="?([^"]+)"?/i.exec(cd);
+    const filename =
+      (m && m[1]) ||
+      `viewer-sessions_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  },
 
   // App settings
   getSettings: () => api.get<Record<string, string>>('/admin/settings').then((r) => r.data),

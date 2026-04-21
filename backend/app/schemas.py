@@ -167,6 +167,28 @@ class StreamPublishSessionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ViewerSessionResponse(BaseModel):
+    """WS-driven viewer session record (see routers/viewer.py)."""
+
+    id: int
+    session_key: str
+    stream_name: str
+    user_id: Optional[int] = None
+    client_ip: str
+    user_agent: str
+    started_at: datetime.datetime
+    last_heartbeat_at: datetime.datetime
+    ended_at: Optional[datetime.datetime] = None
+    duration_seconds: int
+
+    model_config = {"from_attributes": True}
+
+
+class ViewerSessionListResponse(BaseModel):
+    items: list[ViewerSessionResponse]
+    total: int
+
+
 # ---- SRS HTTP hook payload (generic) ----
 class SRSHookPayload(BaseModel):
     """Body schema SRS posts to http_hooks.
