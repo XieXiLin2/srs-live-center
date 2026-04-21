@@ -101,11 +101,14 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
+          # Push `latest` for every push to the default branch, as well as
+          # for every semver tag release. Also keep branch / sha / semver tags.
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
         uses: docker/build-push-action@v5
