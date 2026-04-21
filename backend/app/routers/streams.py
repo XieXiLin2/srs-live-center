@@ -75,6 +75,13 @@ async def list_streams(
         audio = (live or {}).get("audio") or {}
         formats = srs_client.stream_formats(live or {}) if live else ["flv", "webrtc"]
 
+        # Strip `webrtc` from advertised formats when disabled either globally
+        # or for this specific room. Publishing via WHIP is not affected — only
+        # the play-side capability list the frontend reads from here.
+        room_webrtc_ok = bool(getattr(cfg, "webrtc_play_enabled", True))
+        if not settings.webrtc_play_enabled or not room_webrtc_ok:
+            formats = [f for f in formats if f != "webrtc"]
+
         out.append(
             StreamInfo(
                 name=cfg.stream_name,
@@ -85,6 +92,7 @@ async def list_streams(
                 clients=(live or {}).get("clients", cfg.viewer_count),
                 is_private=cfg.is_private,
                 chat_enabled=cfg.chat_enabled,
+                webrtc_play_enabled=settings.webrtc_play_enabled and room_webrtc_ok,
                 is_live=bool(live) or cfg.is_live,
                 formats=formats,
             )
@@ -111,6 +119,19 @@ async def get_play_url(
 
     result = await db.execute(select(StreamConfig).where(StreamConfig.stream_name == request.stream_name))
     config = result.scalar_one_or_none()
+
+    # Enforce the WebRTC-play kill switch (global + per-room).
+    if fmt == "webrtc":
+        if not settings.webrtc_play_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="WebRTC playback is disabled on this server",
+            )
+        if config is not None and not getattr(config, "webrtc_play_enabled", True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="WebRTC playback is disabled for this room",
+            )
 
     token_param = ""
     if config is not None and config.is_private:
@@ -194,6 +215,8 @@ async def update_stream_config(
         config.watch_token = request.watch_token
     if request.chat_enabled is not None:
         config.chat_enabled = request.chat_enabled
+    if request.webrtc_play_enabled is not None:
+        config.webrtc_play_enabled = request.webrtc_play_enabled
 
     await db.flush()
     await db.refresh(config)

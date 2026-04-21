@@ -63,6 +63,8 @@ export interface StreamInfo {
   clients: number;
   is_private: boolean;
   chat_enabled: boolean;
+  /** Effective WebRTC playback permission (global AND per-room). */
+  webrtc_play_enabled: boolean;
   is_live: boolean;
   formats: string[];
 }
@@ -81,6 +83,7 @@ export interface StreamConfig {
   publish_secret: string;
   watch_token: string;
   chat_enabled: boolean;
+  webrtc_play_enabled: boolean;
   is_live: boolean;
   viewer_count: number;
   total_play_count: number;

@@ -150,6 +150,11 @@ SRS 回调 `POST /api/hooks/on_play`：
 
 参见 [`docs/srs-edge.md`](docs/srs-edge.md) 与一键脚本 [`deploy/srs-edge-setup.sh`](deploy/srs-edge-setup.sh)。
 
+## WebRTC 开关
+
+如需「只允许 WebRTC 推送、不允许 WebRTC 播放」或按直播间粒度控制 WHEP，请阅读
+[`docs/webrtc.md`](docs/webrtc.md)（全局开关 `WEBRTC_PLAY_ENABLED` + 每直播间开关）。
+
 最简用法：
 
 ```bash

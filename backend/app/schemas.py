@@ -87,6 +87,7 @@ class StreamInfo(BaseModel):
     clients: int = 0
     is_private: bool = False
     chat_enabled: bool = True
+    webrtc_play_enabled: bool = True
     is_live: bool = False
     formats: list[str] = []
 
@@ -117,6 +118,7 @@ class StreamConfigRequest(BaseModel):
     publish_secret: Optional[str] = None
     watch_token: Optional[str] = None
     chat_enabled: Optional[bool] = None
+    webrtc_play_enabled: Optional[bool] = None
 
 
 class StreamConfigResponse(BaseModel):
@@ -127,6 +129,7 @@ class StreamConfigResponse(BaseModel):
     publish_secret: str
     watch_token: str
     chat_enabled: bool
+    webrtc_play_enabled: bool = True
     is_live: bool
     viewer_count: int
     total_play_count: int

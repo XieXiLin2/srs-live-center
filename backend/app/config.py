@@ -48,6 +48,22 @@ class Settings(BaseSettings):
     # Default application name used by clients pushing/pulling streams.
     srs_app: str = "live"
 
+    # ------------------------------------------------------------------
+    # WebRTC playback (WHEP) global kill-switch.
+    #
+    # When ``False``:
+    #   * The `/api/streams/` listing never advertises `webrtc` as a playable
+    #     format, so the frontend player won't offer it.
+    #   * `/api/streams/play` rejects `format=webrtc` with HTTP 403.
+    #   * SRS can still accept **WebRTC publish (WHIP)** — only playback is
+    #     blocked, not pushing.
+    #
+    # Individual rooms can additionally disable WebRTC via
+    # ``StreamConfig.webrtc_play_enabled`` regardless of this flag; the global
+    # flag is the override at the top of that hierarchy.
+    # ------------------------------------------------------------------
+    webrtc_play_enabled: bool = True
+
     # Optional shared secret for SRS http_hooks callbacks.
     # If set, SRS must include it in the callback URL (e.g. as ?hook_secret=xxx)
     # so that the backend can verify callbacks are coming from SRS, not forged.

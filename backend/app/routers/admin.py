@@ -176,4 +176,5 @@ async def get_app_settings(_admin: User = Depends(require_admin)) -> dict[str, s
         "srs_app": settings.srs_app,
         "public_base_url": settings.public_base_url,
         "oauth2_admin_group": settings.oauth2_admin_group,
+        "webrtc_play_enabled": str(settings.webrtc_play_enabled).lower(),
     }

@@ -70,6 +70,11 @@ class StreamConfig(Base):
     # Chat / danmaku switch for this room.
     chat_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    # Per-room WebRTC (WHEP) playback toggle.
+    # When False this room refuses WebRTC play requests even if the global
+    # ``settings.webrtc_play_enabled`` is True. WHIP publish is unaffected.
+    webrtc_play_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+
     # ---- Live state / statistics (updated via SRS hooks) ----
     is_live: Mapped[bool] = mapped_column(Boolean, default=False)
     viewer_count: Mapped[int] = mapped_column(Integer, default=0)

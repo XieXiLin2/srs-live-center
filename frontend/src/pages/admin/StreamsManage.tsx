@@ -47,7 +47,7 @@ const StreamsManage: React.FC = () => {
     if (row) {
       form.setFieldsValue(row);
     } else {
-      form.setFieldsValue({ is_private: false, chat_enabled: true });
+      form.setFieldsValue({ is_private: false, chat_enabled: true, webrtc_play_enabled: true });
     }
     setModal({ open: true, row });
   };
@@ -60,6 +60,7 @@ const StreamsManage: React.FC = () => {
       display_name: v.display_name ?? '',
       is_private: !!v.is_private,
       chat_enabled: !!v.chat_enabled,
+      webrtc_play_enabled: !!v.webrtc_play_enabled,
       publish_secret: v.publish_secret || undefined,
       watch_token: v.watch_token || undefined,
     });
@@ -120,6 +121,11 @@ const StreamsManage: React.FC = () => {
             title: '聊天',
             dataIndex: 'chat_enabled',
             render: (v: boolean) => v ? <Tag color="green">开</Tag> : <Tag color="red">关</Tag>,
+          },
+          {
+            title: 'WebRTC 播放',
+            dataIndex: 'webrtc_play_enabled',
+            render: (v: boolean) => v ? <Tag color="green">允许</Tag> : <Tag color="red">禁止</Tag>,
           },
           {
             title: '密钥',
@@ -188,6 +194,14 @@ const StreamsManage: React.FC = () => {
           </Form.Item>
           <Form.Item name="chat_enabled" label="开启聊天" valuePropName="checked">
             <Switch checkedChildren="开" unCheckedChildren="关" />
+          </Form.Item>
+          <Form.Item
+            name="webrtc_play_enabled"
+            label="允许 WebRTC 播放"
+            valuePropName="checked"
+            extra="关闭后本房间禁止 WHEP 拉流（低延迟播放），但 WebRTC 推流（WHIP）不受影响。"
+          >
+            <Switch checkedChildren="允许" unCheckedChildren="禁止" />
           </Form.Item>
           <Form.Item name="publish_secret" label="推流密钥（留空自动生成）">
             <Input.Password />
