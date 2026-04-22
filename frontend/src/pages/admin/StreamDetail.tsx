@@ -41,10 +41,10 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { streamApi } from '../../api';
-import type { StreamConfig } from '../../types';
+import type { StreamConfig, StreamStats } from '../../types';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -97,6 +97,13 @@ const StreamDetail: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
+  // Live stats polled from `/api/streams/<name>/stats`. This endpoint is the
+  // same one that the viewer WebSocket (`/api/viewer/ws/*`) computes against,
+  // so "当前观众 / 累计观看 / 直播中" stay consistent with what actual viewers
+  // see. Polling (vs opening another WS) is intentional: opening a WS from an
+  // admin page would register an unwanted ViewerSession row.
+  const [stats, setStats] = useState<StreamStats | null>(null);
+  const statsTimerRef = useRef<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -125,6 +132,33 @@ const StreamDetail: React.FC = () => {
   useEffect(() => {
     if (name) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name]);
+
+  // Live-stats polling. Fires immediately and then every 5s while the page is
+  // mounted. Errors are swallowed so a transient SRS blip doesn't stick an
+  // error toast on the admin screen.
+  useEffect(() => {
+    if (!name) return;
+    let cancelled = false;
+
+    const tick = async () => {
+      try {
+        const s = await streamApi.getStats(name);
+        if (!cancelled) setStats(s);
+      } catch {
+        /* ignore — next tick will retry */
+      }
+    };
+
+    void tick();
+    statsTimerRef.current = window.setInterval(tick, 5000);
+    return () => {
+      cancelled = true;
+      if (statsTimerRef.current !== null) {
+        window.clearInterval(statsTimerRef.current);
+        statsTimerRef.current = null;
+      }
+    };
   }, [name]);
 
   const save = async () => {
@@ -224,6 +258,12 @@ const StreamDetail: React.FC = () => {
     `  -c:a libopus -b:a 64k -ar 48000 -ac 2 \\\n` +
     `  -f whip "${urls.whip}"`;
 
+  // Prefer live stats (WS-driven) over the values snapshotted on `cfg`, which
+  // can lag behind if SRS hooks were dropped.
+  const isLive = stats ? stats.is_live : cfg.is_live;
+  const currentViewers = stats ? stats.current_viewers : cfg.viewer_count;
+  const totalPlays = stats ? stats.total_plays : cfg.total_play_count;
+
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
@@ -234,11 +274,7 @@ const StreamDetail: React.FC = () => {
           <Title level={3} style={{ margin: 0 }}>
             {cfg.display_name || cfg.stream_name}
           </Title>
-          {cfg.is_live ? (
-            <Tag color="green">直播中</Tag>
-          ) : (
-            <Tag>离线</Tag>
-          )}
+          {isLive ? <Tag color="green">直播中</Tag> : <Tag>离线</Tag>}
           {cfg.is_private ? <Tag color="purple">私有</Tag> : <Tag color="blue">公开</Tag>}
         </Space>
       </div>
@@ -261,8 +297,8 @@ const StreamDetail: React.FC = () => {
                   <Descriptions.Item label="创建时间">
                     {new Date(cfg.created_at).toLocaleString()}
                   </Descriptions.Item>
-                  <Descriptions.Item label="当前观众">{cfg.viewer_count}</Descriptions.Item>
-                  <Descriptions.Item label="累计观看">{cfg.total_play_count}</Descriptions.Item>
+                  <Descriptions.Item label="当前观众">{currentViewers}</Descriptions.Item>
+                  <Descriptions.Item label="累计观看">{totalPlays}</Descriptions.Item>
                 </Descriptions>
 
                 <Form form={form} layout="vertical">

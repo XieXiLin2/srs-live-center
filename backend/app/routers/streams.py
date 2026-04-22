@@ -433,27 +433,77 @@ async def get_chat_config(stream_name: str, db: AsyncSession = Depends(get_db)) 
 # ---------------------------------------------------------------------------
 
 
-@router.get("/config", response_model=list[StreamConfigResponse])
-async def list_stream_configs(
-    db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
-) -> list[StreamConfigResponse]:
-    """List all stream configs.
+# ---------------------------------------------------------------------------
+# Helpers: authoritative liveness / viewer count overrides for StreamConfig*
+#
+# The DB columns ``StreamConfig.is_live`` / ``viewer_count`` / ``total_play_count``
+# were originally populated from SRS ``on_publish``/``on_play`` hooks. Hooks
+# can be dropped (SRS restart, backend restart, transient 5xx...) so we never
+# trust them as the source of truth when answering API requests — we
+# recompute:
+#
+# * ``is_live``         ← SRS ``publish.active`` (if SRS reachable); else
+#                          "has an open StreamPublishSession row"; else the
+#                          DB column as a last resort.
+# * ``viewer_count``    ← currently-open ``ViewerSession`` rows (WS-driven).
+#                          Forced to 0 when the stream is offline to avoid
+#                          stale numbers.
+# * ``total_play_count``← lifetime count of ``ViewerSession`` rows.
+# ---------------------------------------------------------------------------
 
-    The DB-stored ``viewer_count`` / ``total_play_count`` columns are legacy
-    fields fed by the old SRS-hook flow. To stay consistent with the new
-    WS-driven analytics (see ``routers/viewer.py``) we **override** them on
-    the way out using live aggregations over ``ViewerSession``:
 
-    * ``viewer_count``     ← currently-open viewer sessions per stream
-    * ``total_play_count`` ← lifetime ``ViewerSession`` rows per stream
+async def _build_liveness_map(
+    db: AsyncSession, stream_names: list[str]
+) -> dict[str, bool]:
+    """Return ``{stream_name: is_live}`` authoritatively derived from SRS.
+
+    ``list_streams`` returns ``[]`` on error, so we distinguish "SRS reachable
+    but says nothing" from "SRS unreachable" by observing the pre-query state:
+    ``live_rows is None`` never happens here (the client always yields a list),
+    so when the list is empty we fall back to ``StreamPublishSession``.
     """
-    result = await db.execute(select(StreamConfig).order_by(StreamConfig.stream_name))
-    configs = list(result.scalars().all())
+    live_rows = await srs_client.list_streams()
+    live_map: dict[str, bool] = {}
+    if live_rows:
+        by_name: dict[str, dict] = {
+            r.get("name", ""): r for r in live_rows if r.get("name")
+        }
+        for name in stream_names:
+            live_map[name] = srs_client.stream_is_publishing(by_name.get(name))
+        return live_map
 
-    # Single roundtrip each — much cheaper than per-row subqueries.
+    # SRS reported nothing (unreachable or truly empty). Cross-check with the
+    # backend's own publish-session table. Any stream with an unclosed
+    # StreamPublishSession row is still considered live.
+    if not stream_names:
+        return {}
+    pub_q = await db.execute(
+        select(StreamPublishSession.stream_name)
+        .where(StreamPublishSession.stream_name.in_(stream_names))
+        .where(StreamPublishSession.ended_at.is_(None))
+    )
+    open_publishers = {row[0] for row in pub_q.all()}
+    return {name: name in open_publishers for name in stream_names}
+
+
+async def _apply_runtime_overrides(
+    db: AsyncSession,
+    configs: list[StreamConfig],
+    items: list[StreamConfigResponse],
+) -> None:
+    """Override is_live / viewer_count / total_play_count on response items.
+
+    ``configs`` and ``items`` are aligned 1:1 (same index = same stream).
+    """
+    names = [c.stream_name for c in configs]
+    if not names:
+        return
+
+    live_map = await _build_liveness_map(db, names)
+
     open_q = await db.execute(
         select(ViewerSession.stream_name, func.count(ViewerSession.id))
+        .where(ViewerSession.stream_name.in_(names))
         .where(ViewerSession.ended_at.is_(None))
         .group_by(ViewerSession.stream_name)
     )
@@ -461,18 +511,44 @@ async def list_stream_configs(
 
     total_q = await db.execute(
         select(ViewerSession.stream_name, func.count(ViewerSession.id))
+        .where(ViewerSession.stream_name.in_(names))
         .group_by(ViewerSession.stream_name)
     )
     total_map: dict[str, int] = {name: int(cnt) for name, cnt in total_q.all()}
 
-    out: list[StreamConfigResponse] = []
+    for cfg, item in zip(configs, items):
+        is_live = live_map.get(cfg.stream_name, bool(cfg.is_live))
+        item.is_live = is_live
+        # Don't show ghost viewers while the stream is offline.
+        item.viewer_count = open_map.get(cfg.stream_name, 0) if is_live else 0
+        item.total_play_count = total_map.get(
+            cfg.stream_name, item.total_play_count
+        )
+
+
+@router.get("/config", response_model=list[StreamConfigResponse])
+async def list_stream_configs(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
+) -> list[StreamConfigResponse]:
+    """List all stream configs with runtime-accurate stats.
+
+    See :func:`_apply_runtime_overrides` for the override rules. Keeping this
+    endpoint's data identical to the single-config endpoint is intentional:
+    both power the admin UI and divergence produces confusing diffs between
+    the listing page and the detail page.
+    """
+    result = await db.execute(select(StreamConfig).order_by(StreamConfig.stream_name))
+    configs = list(result.scalars().all())
+
+    items: list[StreamConfigResponse] = []
     for c in configs:
         item = StreamConfigResponse.model_validate(c)
-        item.viewer_count = open_map.get(c.stream_name, 0)
-        item.total_play_count = total_map.get(c.stream_name, item.total_play_count)
         _fill_publish_urls(item, c.stream_name, c.publish_secret)
-        out.append(item)
-    return out
+        items.append(item)
+
+    await _apply_runtime_overrides(db, configs, items)
+    return items
 
 
 @router.get("/config/{stream_name}", response_model=StreamConfigResponse)
@@ -483,8 +559,10 @@ async def get_stream_config(
 ) -> StreamConfigResponse:
     """Return a single stream config row (admin only).
 
-    Used by the dedicated stream-detail page in the frontend so it can fetch
-    the full config independently from the listing endpoint.
+    Used by the dedicated stream-detail page. Runtime fields (is_live,
+    viewer_count, total_play_count) are overridden via the same path as
+    :func:`list_stream_configs` so the detail page never disagrees with the
+    listing / dashboard.
     """
     result = await db.execute(
         select(StreamConfig).where(StreamConfig.stream_name == stream_name)
@@ -493,7 +571,9 @@ async def get_stream_config(
     if config is None:
         raise HTTPException(status_code=404, detail="Stream config not found")
     item = StreamConfigResponse.model_validate(config)
-    return _fill_publish_urls(item, config.stream_name, config.publish_secret)
+    _fill_publish_urls(item, config.stream_name, config.publish_secret)
+    await _apply_runtime_overrides(db, [config], [item])
+    return item
 
 
 @router.post("/config/{stream_name}", response_model=StreamConfigResponse, status_code=status.HTTP_201_CREATED)
