@@ -2,7 +2,7 @@ import Artplayer from 'artplayer';
 import artplayerPluginDanmuku from 'artplayer-plugin-danmuku';
 import artplayerPluginDocumentPip from 'artplayer-plugin-document-pip';
 import mpegts from 'mpegts.js';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 interface LivePlayerProps {
   url: string;
@@ -61,23 +61,14 @@ const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholde
   const artRef = useRef<Artplayer | null>(null);
   const mpegtsRef = useRef<ReturnType<typeof mpegts.createPlayer> | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
-  const [showPlaceholder, setShowPlaceholder] = useState(!isLive);
 
-  // Detect if placeholder is image or video
+  const showPlaceholder = !isLive && !!placeholderUrl;
+
   const isPlaceholderVideo = useMemo(() => {
     if (!placeholderUrl) return false;
     const ext = placeholderUrl.split('.').pop()?.toLowerCase();
     return ['mp4', 'webm', 'ogg', 'mov'].includes(ext || '');
   }, [placeholderUrl]);
-
-  // When stream goes live, switch from placeholder to live stream
-  useEffect(() => {
-    if (isLive && showPlaceholder) {
-      setShowPlaceholder(false);
-    } else if (!isLive && !showPlaceholder && placeholderUrl) {
-      setShowPlaceholder(true);
-    }
-  }, [isLive, showPlaceholder, placeholderUrl]);
 
   useEffect(() => {
     if (!containerRef.current) return;

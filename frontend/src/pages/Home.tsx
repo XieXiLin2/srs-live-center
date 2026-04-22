@@ -19,49 +19,13 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { streamApi } from '../api';
-import { useAuth } from '../store/auth';
 import { usePageTitle } from '../store/branding';
 import type { StreamInfo } from '../types';
-
-
-/**
- * Rewrite the host portion of a play URL with the Edge node's base_url.
- *
- * The backend's `/api/streams/play` always returns URLs prefixed by
- * ``public_base_url`` (or a relative path if that isn't configured). To switch
- * playback to an Edge node we strip that prefix and splice in the node's
- * ``base_url`` — preserving path + query (so the watch token survives).
- *
- * If the rewrite cannot be performed (e.g. original URL was relative), the
- * original URL is returned unchanged.
- */
-function applyEdgeRewrite(originalUrl: string, edgeBaseUrl: string): string {
-  if (!originalUrl) return originalUrl;
-  // Full absolute URL: `https://origin.example.com/live/demo.flv?token=x`
-  if (/^https?:\/\//i.test(originalUrl)) {
-    try {
-      const u = new URL(originalUrl);
-      const eb = new URL(edgeBaseUrl);
-      return `${eb.origin}${u.pathname}${u.search}${u.hash}`;
-    } catch {
-      return originalUrl;
-    }
-  }
-  // Relative URL (no origin configured server-side). Prefix with the edge.
-  try {
-    const eb = new URL(edgeBaseUrl);
-    const path = originalUrl.startsWith('/') ? originalUrl : `/${originalUrl}`;
-    return `${eb.origin}${path}`;
-  } catch {
-    return originalUrl;
-  }
-}
 
 
 const { Title, Text } = Typography;
 
 const Home: React.FC = () => {
-  const { login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [streams, setStreams] = useState<StreamInfo[]>([]);
@@ -109,28 +73,6 @@ const Home: React.FC = () => {
 
   const publicStreams = useMemo(() => streams.filter((s) => !s.is_private), [streams]);
   const privateStreams = useMemo(() => streams.filter((s) => s.is_private), [streams]);
-
-  // Resolve the actual URL fed to <LivePlayer> after applying the Edge
-  // rewrite. When the user picks "origin" (or no sources are loaded yet),
-  // the original URL is used verbatim.
-  const resolvedPlayUrl = useMemo(() => {
-    if (!playData?.url) return '';
-    if (!sources || selectedSource === 'origin') return playData.url;
-    const edge = sources.edges.find((e) => e.slug === selectedSource);
-    if (!edge || !edge.base_url) return playData.url;
-    return applyEdgeRewrite(playData.url, edge.base_url);
-  }, [playData, sources, selectedSource]);
-
-  // Source-selector options. "Origin" is always present; enabled edges come
-  // from the backend in their configured order.
-  const sourceOptions = useMemo(() => {
-    const opts: { label: string; value: string }[] = [{ label: 'Origin', value: 'origin' }];
-    if (sources) {
-      sources.edges.forEach((e) => opts.push({ label: e.name, value: e.slug }));
-    }
-    return opts;
-  }, [sources]);
-
 
   const renderStreamCard = (stream: StreamInfo) => (
     <Col xs={24} sm={12} md={8} lg={6} key={stream.name}>

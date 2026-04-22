@@ -41,7 +41,7 @@ function formatDuration(totalSeconds: number): string {
 const LiveRoom: React.FC = () => {
   const { roomname } = useParams<{ roomname: string }>();
   const navigate = useNavigate();
-  const { user, token: authToken } = useAuth();
+  const { token: authToken } = useAuth();
   const [stream, setStream] = useState<StreamInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedFormat, setSelectedFormat] = useState<string>('flv');
@@ -98,6 +98,7 @@ const LiveRoom: React.FC = () => {
     const fmt = stream.formats.includes('flv') ? 'flv' : stream.formats[0] || 'flv';
     setSelectedFormat(fmt);
     handlePlay(stream, fmt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stream]);
 
   // Track live session duration
