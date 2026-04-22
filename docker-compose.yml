@@ -29,7 +29,7 @@ services:
       # 如果外部 Nginx 在另一台机器，请改为 "8000:8000"。
       - "127.0.0.1:8000:8000"
     volumes:
-      - app-data:/app/data
+      - ./data/app:/app/data
     env_file:
       - .env
     environment:
@@ -55,7 +55,7 @@ services:
       - "10080:10080/udp"         # SRT UDP
     volumes:
       - ./deploy/srs/srs.conf:/usr/local/srs/conf/srs.conf:ro
-      - srs-data:/usr/local/srs/objs/nginx/html
+      - ./data/srs:/usr/local/srs/objs/nginx/html
     environment:
       - CANDIDATE=${CANDIDATE:-}
     # -----------------------------------------------------------------------
@@ -104,9 +104,4 @@ services:
     container_name: srs-live-center-redis
     restart: unless-stopped
     volumes:
-      - redis-data:/data
-
-volumes:
-  app-data:
-  redis-data:
-  srs-data:
+      - ./data/redis:/data

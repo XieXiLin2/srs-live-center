@@ -29,6 +29,7 @@ Thumbs.db
 # ===== App =====
 .env
 backend/data/
+data/
 *.db
 *.sqlite3
 
