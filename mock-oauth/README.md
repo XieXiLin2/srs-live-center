@@ -1,6 +1,6 @@
-+# Mock OAuth2 Server
+# Mock OAuth2 Server
 
-用于 Oryx Live Center 本地开发和测试的 OAuth2/OIDC 模拟服务器，无需依赖 Authentik 等外部认证服务。
+用于 SRS Live Center 本地开发和测试的 OAuth2/OIDC 模拟服务器，无需依赖 Authentik 等外部认证服务。
 
 ## 功能
 
@@ -16,9 +16,12 @@
 
 | 用户名   | 密码    | 角色     | 组                     |
 | -------- | ------- | -------- | ---------------------- |
-| `admin`  | `admin` | 管理员   | `oryx-admin`, `users`  |
+| `admin`  | `admin` | 管理员   | `srs-admin`, `users`   |
 | `user1`  | `user1` | 普通用户 | `users`                |
 | `user2`  | `user2` | 普通用户 | `users`                |
+
+> 默认管理员组名是 `srs-admin`，需要与后端 `.env` 的 `OAUTH2_ADMIN_GROUP`
+> 保持一致（默认也是 `srs-admin`）。
 
 ## 快速启动
 

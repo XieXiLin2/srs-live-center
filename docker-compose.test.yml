@@ -5,23 +5,23 @@
 #   docker compose -f docker-compose.test.yml up -d --build
 #
 # 包含服务:
-#   - app        (Oryx Live Center)  → http://localhost:3000
-#   - mock-oauth (Mock OAuth2 服务)  → http://localhost:9000
-#   - oryx       (Oryx/SRS 流媒体)  → rtmp://localhost:1935
+#   - app        (SRS Live Center)  → http://localhost:3000
+#   - mock-oauth (Mock OAuth2 服务) → http://localhost:9000
+#   - srs        (SRS 6 流媒体)     → rtmp://localhost:1935
 #   - redis
 # ============================================================
 
 services:
   mock-oauth:
     build: ./mock-oauth
-    container_name: oryx-live-center-mock-oauth
+    container_name: srs-live-center-mock-oauth
     restart: unless-stopped
     ports:
       - "9000:9000"
 
   app:
     build: .
-    container_name: oryx-live-center
+    container_name: srs-live-center-test
     restart: unless-stopped
     ports:
       - "3000:8000"
@@ -29,7 +29,7 @@ services:
       - app-data:/app/data
     environment:
       # App
-      - APP_NAME=Oryx Live Center (Test)
+      - APP_NAME=SRS Live Center (Test)
       - APP_SECRET_KEY=test-secret-key-not-for-production
       - DEBUG=true
       - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
@@ -49,44 +49,44 @@ services:
       - OAUTH2_LOGOUT_URL=http://localhost:9000/end-session
       - OAUTH2_REDIRECT_URI=http://localhost:3000/auth/callback
       - OAUTH2_SCOPE=openid profile email
-      - OAUTH2_ADMIN_GROUP=oryx-admin
+      - OAUTH2_ADMIN_GROUP=srs-admin
 
-      # Oryx
-      - ORYX_API_URL=http://oryx:2022
-      - ORYX_HTTP_URL=http://oryx:2022
-      - ORYX_MGMT_PASSWORD=test-password
+      # SRS 6 (direct integration, no Oryx)
+      - SRS_HTTP_URL=http://srs:8080
+      - SRS_API_URL=http://srs:1985
+      - SRS_APP=live
+      - SRS_HOOK_SECRET=test-hook-secret
+      - WEBRTC_PLAY_ENABLED=true
 
       # JWT
       - JWT_SECRET=test-jwt-secret-not-for-production
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRE_MINUTES=1440
-
-      # CDN (留空)
-      - CDN_BASE_URL=
-      - CDN_PULL_SECRET=
     depends_on:
       - redis
-      - oryx
+      - srs
       - mock-oauth
 
-  oryx:
-    image: registry.cn-hangzhou.aliyuncs.com/ossrs/oryx:5
-    container_name: oryx-live-center-oryx
+  srs:
+    image: ossrs/srs:6
+    container_name: srs-live-center-test-srs
     restart: unless-stopped
+    command: ["./objs/srs", "-c", "conf/srs.conf"]
     ports:
-      - "1935:1935"       # RTMP push
-      - "8000:8000/udp"   # WebRTC UDP
-      - "10080:10080/udp" # SRT UDP
+      - "1935:1935"        # RTMP push
+      - "1985:1985"        # SRS HTTP API（测试方便，公网不要这样开）
+      - "8080:8080"        # HTTP-FLV / HLS
+      - "8000:8000/udp"    # WebRTC UDP
+      - "10080:10080/udp"  # SRT UDP
     volumes:
-      - oryx-data:/data
+      - ./deploy/srs/srs.conf:/usr/local/srs/conf/srs.conf:ro
+      - srs-data:/usr/local/srs/objs/nginx/html
     environment:
       - CANDIDATE=${CANDIDATE:-127.0.0.1}
-      - REACT_APP_LOCALE=zh
-      - MGMT_PASSWORD=test-password
 
   redis:
     image: redis:7-alpine
-    container_name: oryx-live-center-redis
+    container_name: srs-live-center-test-redis
     restart: unless-stopped
     volumes:
       - redis-data:/data
@@ -94,4 +94,4 @@ services:
 volumes:
   app-data:
   redis-data:
-  oryx-data:
+  srs-data:

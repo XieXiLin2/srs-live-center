@@ -1,5 +1,5 @@
 """
-Mock OAuth2 / OpenID Connect Server for Oryx Live Center Testing
+Mock OAuth2 / OpenID Connect Server for SRS Live Center Testing
 
 模拟 Authentik 的 OAuth2/OIDC 端点，提供以下功能：
 - 授权端点 (/authorize)      — 显示测试用户选择页面
@@ -9,7 +9,7 @@ Mock OAuth2 / OpenID Connect Server for Oryx Live Center Testing
 - 管理页面 (/manage)          — 查看/添加/管理测试用户
 
 预置测试用户:
-  - admin / admin  → 管理员 (oryx-admin 组)
+  - admin / admin  → 管理员 (srs-admin 组)
   - user1 / user1  → 普通用户
   - user2 / user2  → 普通用户
 """
@@ -45,7 +45,7 @@ MOCK_USERS: dict[str, dict] = {
         "name": "管理员",
         "email": "admin@example.com",
         "picture": "",
-        "groups": ["oryx-admin", "users"],
+        "groups": ["srs-admin", "users"],
         "password": "admin",
     },
     "user1": {
@@ -317,7 +317,7 @@ MANAGE_PAGE_HTML = """
                 <label>是否管理员</label>
                 <select name="is_admin">
                     <option value="no">否 — 普通用户</option>
-                    <option value="yes">是 — oryx-admin 组</option>
+                    <option value="yes">是 — srs-admin 组</option>
                 </select>
                 <button type="submit">添加用户</button>
             </form>
@@ -395,7 +395,7 @@ async def authorize(
     """显示测试用户选择页面，点击即登录。"""
     user_buttons = ""
     for username, user in MOCK_USERS.items():
-        is_admin = "oryx-admin" in user.get("groups", [])
+        is_admin = "srs-admin" in user.get("groups", [])
         avatar_class = "admin" if is_admin else ""
         avatar_letter = user["name"][0] if user["name"] else username[0].upper()
         groups_str = ", ".join(user.get("groups", []))
@@ -572,7 +572,7 @@ async def manage_page():
     for username, user in MOCK_USERS.items():
         groups_tags = ""
         for g in user.get("groups", []):
-            tag_class = "tag-admin" if g == "oryx-admin" else "tag-user"
+            tag_class = "tag-admin" if g == "srs-admin" else "tag-user"
             groups_tags += f'<span class="tag {tag_class}">{g}</span>'
 
         user_rows += f"""
@@ -604,7 +604,7 @@ async def manage_add_user(
 
     groups = ["users"]
     if is_admin == "yes":
-        groups.insert(0, "oryx-admin")
+        groups.insert(0, "srs-admin")
 
     MOCK_USERS[username] = {
         "sub": f"uuid-{username}-{uuid.uuid4().hex[:6]}",
@@ -636,7 +636,7 @@ if __name__ == "__main__":
     import uvicorn
 
     print("=" * 60)
-    print("  🔐 Mock OAuth2 Server for Oryx Live Center")
+    print("  🔐 Mock OAuth2 Server for SRS Live Center")
     print("=" * 60)
     print(f"  Server:     http://localhost:{PORT}")
     print(f"  Management: http://localhost:{PORT}/manage")
@@ -644,7 +644,7 @@ if __name__ == "__main__":
     print()
     print("  预置测试用户:")
     for uname, udata in MOCK_USERS.items():
-        role = "管理员" if "oryx-admin" in udata.get("groups", []) else "普通用户"
+        role = "管理员" if "srs-admin" in udata.get("groups", []) else "普通用户"
         print(f"    {uname:10s} / {udata['password']:10s}  ({role})")
     print("=" * 60)
 
