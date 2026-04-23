@@ -1,5 +1,4 @@
 import Artplayer from 'artplayer';
-import artplayerPluginDanmuku from 'artplayer-plugin-danmuku';
 import artplayerPluginDocumentPip from 'artplayer-plugin-document-pip';
 import mpegts from 'mpegts.js';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -12,8 +11,6 @@ interface LivePlayerProps {
   isLive: boolean;
   /** URL of placeholder content (image or video) to show when offline. */
   placeholderUrl?: string;
-  /** Whether chat/danmaku is enabled for this stream. */
-  chatEnabled?: boolean;
   style?: React.CSSProperties;
 }
 
@@ -58,7 +55,7 @@ async function playWebRTC(
   return pc;
 }
 
-const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholderUrl, chatEnabled = true, style }) => {
+const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholderUrl, style }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const artRef = useRef<Artplayer | null>(null);
   const mpegtsRef = useRef<ReturnType<typeof mpegts.createPlayer> | null>(null);
@@ -203,7 +200,7 @@ const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholde
         playbackRate: false,
         aspectRatio: true,
         setting: true,
-        pip: true,
+        pip: false,
         fullscreen: true,
         fullscreenWeb: true,
         mutex: true,
@@ -216,19 +213,6 @@ const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholde
         },
         plugins: [
           artplayerPluginDocumentPip({}),
-          ...(chatEnabled ? [artplayerPluginDanmuku({
-            danmuku: [],
-            speed: 5,
-            opacity: 1,
-            fontSize: 25,
-            color: '#FFFFFF',
-            mode: 0,
-            margin: [10, '25%'],
-            antiOverlap: true,
-            synchronousPlayback: false,
-            lockTime: 5,
-            maxLength: 100,
-          })] : []),
         ],
       };
 
@@ -278,7 +262,7 @@ const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholde
         }
       };
     }
-  }, [url, format, showPlaceholder, placeholderUrl, placeholderMediaType, chatEnabled]);
+  }, [url, format, showPlaceholder, placeholderUrl, placeholderMediaType]);
 
   return (
     <div
