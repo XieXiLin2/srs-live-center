@@ -86,8 +86,8 @@ const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholde
     }
 
     if (isLive) {
-      // Stream is live - hide placeholder immediately
-      setShowPlaceholder(false);
+      // Stream is live - hide placeholder immediately (use setTimeout to avoid sync setState in effect)
+      setTimeout(() => setShowPlaceholder(false), 0);
       wasLiveRef.current = true;
     } else if (wasLiveRef.current && placeholderUrl) {
       // Stream just went offline and we have a placeholder - start 5-minute timer
@@ -97,7 +97,7 @@ const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholde
       wasLiveRef.current = false;
     } else if (!wasLiveRef.current && placeholderUrl) {
       // Stream was already offline (initial load) - show placeholder immediately
-      setShowPlaceholder(true);
+      setTimeout(() => setShowPlaceholder(true), 0);
     }
 
     return () => {
@@ -125,17 +125,18 @@ const LivePlayer: React.FC<LivePlayerProps> = ({ url, format, isLive, placeholde
 
       // Handle image placeholders separately (ArtPlayer can't play images)
       if (placeholderMediaType === 'image') {
+        const container = containerRef.current;
         const img = document.createElement('img');
         img.src = placeholderUrl;
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'contain';
         img.alt = '直播间离线';
-        containerRef.current.innerHTML = '';
-        containerRef.current.appendChild(img);
+        container.innerHTML = '';
+        container.appendChild(img);
         return () => {
-          if (containerRef.current) {
-            containerRef.current.innerHTML = '';
+          if (container) {
+            container.innerHTML = '';
           }
         };
       }
