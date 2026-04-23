@@ -59,6 +59,12 @@ const AppLayout: React.FC = () => {
   const { token: themeToken } = theme.useToken();
   const { site_name, logo_url, copyright, icp_filing, mps_filing, moeicp_filing } = useBranding();
 
+  // Extract numeric code from MPS filing (e.g., "粤公安网备12345678号" -> "12345678")
+  const mpsCode = mps_filing ? mps_filing.match(/\d+/)?.[0] : null;
+
+  // Extract numeric code from MoeICP filing (e.g., "萌ICP备20231234号" -> "20231234")
+  const moeicpCode = moeicp_filing ? moeicp_filing.match(/\d+/)?.[0] : null;
+
   // Default page title: updates on every route change. Stream detail pages
   // and similar override this by calling ``usePageTitle`` themselves.
   useEffect(() => {
@@ -186,17 +192,31 @@ const AppLayout: React.FC = () => {
         <div dangerouslySetInnerHTML={{ __html: copyright }} style={{ marginBottom: 8 }} />
         {(icp_filing || mps_filing || moeicp_filing) && (
           <div style={{ fontSize: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {icp_filing && <span>{icp_filing}</span>}
+            {icp_filing && (
+              <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                {icp_filing}
+              </a>
+            )}
             {icp_filing && (mps_filing || moeicp_filing) && <span>|</span>}
             {mps_filing && (
-              <a href="http://www.beian.gov.cn/" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'inherit', textDecoration: 'none' }}>
+              <a
+                href={mpsCode ? `https://beian.mps.gov.cn/#/query/webSearch?code=${mpsCode}` : 'https://beian.mps.gov.cn/'}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'inherit', textDecoration: 'none' }}
+              >
                 <img src="/beian-mps-icon.png" alt="" style={{ height: 14 }} />
                 <span>{mps_filing}</span>
               </a>
             )}
             {mps_filing && moeicp_filing && <span>|</span>}
             {moeicp_filing && (
-              <a href="https://icp.gov.moe/" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'inherit', textDecoration: 'none' }}>
+              <a
+                href={moeicpCode ? `https://icp.gov.moe/?keyword=${moeicpCode}` : 'https://icp.gov.moe/'}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'inherit', textDecoration: 'none' }}
+              >
                 <img src="/moeicp-icon120.png" alt="" style={{ height: 14 }} />
                 <span>{moeicp_filing}</span>
               </a>
