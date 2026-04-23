@@ -71,8 +71,8 @@ const Home: React.FC = () => {
     [navigate],
   );
 
-  const publicStreams = useMemo(() => streams.filter((s) => !s.is_private), [streams]);
-  const privateStreams = useMemo(() => streams.filter((s) => s.is_private), [streams]);
+  const publicStreams = useMemo(() => streams.filter((s) => !s.is_private && s.show_on_homepage), [streams]);
+  const privateStreams = useMemo(() => streams.filter((s) => s.is_private && s.show_on_homepage), [streams]);
 
   const renderStreamCard = (stream: StreamInfo) => (
     <Col xs={24} sm={12} md={8} lg={6} key={stream.name}>

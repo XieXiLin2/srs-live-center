@@ -91,6 +91,7 @@ class StreamInfo(BaseModel):
     is_live: bool = False
     formats: list[str] = []
     offline_placeholder_url: str = ""
+    show_on_homepage: bool = True
 
 
 class StreamListResponse(BaseModel):
@@ -121,6 +122,7 @@ class StreamConfigRequest(BaseModel):
     chat_enabled: Optional[bool] = None
     webrtc_play_enabled: Optional[bool] = None
     offline_placeholder_url: Optional[str] = None
+    show_on_homepage: Optional[bool] = None
 
 
 class StreamConfigResponse(BaseModel):
@@ -133,6 +135,7 @@ class StreamConfigResponse(BaseModel):
     chat_enabled: bool
     webrtc_play_enabled: bool = True
     offline_placeholder_url: str = ""
+    show_on_homepage: bool = True
     is_live: bool
     viewer_count: int
     total_play_count: int

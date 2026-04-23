@@ -80,6 +80,10 @@ class StreamConfig(Base):
     # Empty string means use the global default.
     offline_placeholder_url: Mapped[str] = mapped_column(String(1024), default="")
 
+    # Whether this stream should be shown on the homepage.
+    # When False, the stream is hidden from the public stream list.
+    show_on_homepage: Mapped[bool] = mapped_column(Boolean, default=True)
+
     # ---- Live state / statistics (updated via SRS hooks) ----
     is_live: Mapped[bool] = mapped_column(Boolean, default=False)
     viewer_count: Mapped[int] = mapped_column(Integer, default=0)

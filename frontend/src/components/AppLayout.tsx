@@ -57,7 +57,7 @@ const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { token: themeToken } = theme.useToken();
-  const { site_name, logo_url, copyright } = useBranding();
+  const { site_name, logo_url, copyright, icp_filing, mps_filing, moeicp_filing } = useBranding();
 
   // Default page title: updates on every route change. Stream detail pages
   // and similar override this by calling ``usePageTitle`` themselves.
@@ -170,7 +170,26 @@ const AppLayout: React.FC = () => {
       </Content>
 
       <Footer style={{ textAlign: 'center', color: themeToken.colorTextSecondary }}>
-        {copyright}
+        <div dangerouslySetInnerHTML={{ __html: copyright }} style={{ marginBottom: 8 }} />
+        {(icp_filing || mps_filing || moeicp_filing) && (
+          <div style={{ fontSize: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {icp_filing && <span>{icp_filing}</span>}
+            {icp_filing && (mps_filing || moeicp_filing) && <span>|</span>}
+            {mps_filing && (
+              <a href="http://www.beian.gov.cn/" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'inherit', textDecoration: 'none' }}>
+                <img src="/beian-mps-icon.png" alt="" style={{ height: 14 }} />
+                <span>{mps_filing}</span>
+              </a>
+            )}
+            {mps_filing && moeicp_filing && <span>|</span>}
+            {moeicp_filing && (
+              <a href="https://icp.gov.moe/" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'inherit', textDecoration: 'none' }}>
+                <img src="/moeicp-icon120.png" alt="" style={{ height: 14 }} />
+                <span>{moeicp_filing}</span>
+              </a>
+            )}
+          </div>
+        )}
       </Footer>
     </Layout>
   );

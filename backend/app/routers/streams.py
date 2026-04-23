@@ -208,6 +208,7 @@ async def list_streams(
                 is_live=is_live,
                 formats=formats,
                 offline_placeholder_url=offline_placeholder,
+                show_on_homepage=cfg.show_on_homepage,
             )
         )
 
@@ -653,6 +654,8 @@ async def update_stream_config(
         config.webrtc_play_enabled = request.webrtc_play_enabled
     if request.offline_placeholder_url is not None:
         config.offline_placeholder_url = request.offline_placeholder_url
+    if request.show_on_homepage is not None:
+        config.show_on_homepage = request.show_on_homepage
 
     await db.flush()
     await db.refresh(config)

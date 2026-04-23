@@ -33,6 +33,9 @@ _SITE_NAME_KEY = "site_name"
 _LOGO_URL_KEY = "site_logo_url"
 _COPYRIGHT_KEY = "site_copyright"
 _OFFLINE_PLACEHOLDER_KEY = "offline_placeholder_url"
+_ICP_FILING_KEY = "icp_filing"
+_MPS_FILING_KEY = "mps_filing"
+_MOEICP_FILING_KEY = "moeicp_filing"
 
 
 class BrandingResponse(BaseModel):
@@ -42,6 +45,9 @@ class BrandingResponse(BaseModel):
     logo_url: str
     copyright: str
     offline_placeholder_url: str
+    icp_filing: str
+    mps_filing: str
+    moeicp_filing: str
 
 
 class BrandingUpdateRequest(BaseModel):
@@ -51,6 +57,9 @@ class BrandingUpdateRequest(BaseModel):
     logo_url: Optional[str] = Field(default=None, max_length=1024)
     copyright: Optional[str] = Field(default=None, max_length=512)
     offline_placeholder_url: Optional[str] = Field(default=None, max_length=1024)
+    icp_filing: Optional[str] = Field(default=None, max_length=256)
+    mps_filing: Optional[str] = Field(default=None, max_length=256)
+    moeicp_filing: Optional[str] = Field(default=None, max_length=256)
 
 
 async def _load_map(db: AsyncSession, keys: list[str]) -> dict[str, str]:
@@ -76,7 +85,8 @@ def _format_copyright(raw: str) -> str:
 async def get_branding(db: AsyncSession = Depends(get_db)) -> BrandingResponse:
     """Public endpoint: no auth required."""
     stored = await _load_map(
-        db, [_SITE_NAME_KEY, _LOGO_URL_KEY, _COPYRIGHT_KEY, _OFFLINE_PLACEHOLDER_KEY]
+        db, [_SITE_NAME_KEY, _LOGO_URL_KEY, _COPYRIGHT_KEY, _OFFLINE_PLACEHOLDER_KEY,
+             _ICP_FILING_KEY, _MPS_FILING_KEY, _MOEICP_FILING_KEY]
     )
     # Env defaults (from config.Settings) serve as fallback until the admin
     # customises things from the UI for the first time.
@@ -84,12 +94,18 @@ async def get_branding(db: AsyncSession = Depends(get_db)) -> BrandingResponse:
     logo_url = stored.get(_LOGO_URL_KEY) or settings.site_logo_url
     copyright_tpl = stored.get(_COPYRIGHT_KEY) or settings.site_copyright
     offline_placeholder_url = stored.get(_OFFLINE_PLACEHOLDER_KEY) or settings.offline_placeholder_url
+    icp_filing = stored.get(_ICP_FILING_KEY) or ""
+    mps_filing = stored.get(_MPS_FILING_KEY) or ""
+    moeicp_filing = stored.get(_MOEICP_FILING_KEY) or ""
 
     return BrandingResponse(
         site_name=site_name,
         logo_url=logo_url,
         copyright=_format_copyright(copyright_tpl),
         offline_placeholder_url=offline_placeholder_url,
+        icp_filing=icp_filing,
+        mps_filing=mps_filing,
+        moeicp_filing=moeicp_filing,
     )
 
 
@@ -115,6 +131,12 @@ async def update_branding(
         updates[_COPYRIGHT_KEY] = payload.copyright
     if payload.offline_placeholder_url is not None:
         updates[_OFFLINE_PLACEHOLDER_KEY] = payload.offline_placeholder_url.strip()
+    if payload.icp_filing is not None:
+        updates[_ICP_FILING_KEY] = payload.icp_filing.strip()
+    if payload.mps_filing is not None:
+        updates[_MPS_FILING_KEY] = payload.mps_filing.strip()
+    if payload.moeicp_filing is not None:
+        updates[_MOEICP_FILING_KEY] = payload.moeicp_filing.strip()
 
     for key, value in updates.items():
         result = await db.execute(select(AppSetting).where(AppSetting.key == key))

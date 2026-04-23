@@ -68,6 +68,7 @@ export interface StreamInfo {
   is_live: boolean;
   formats: string[];
   offline_placeholder_url: string;
+  show_on_homepage: boolean;
 }
 
 export interface StreamPlayResponse {
@@ -86,6 +87,7 @@ export interface StreamConfig {
   chat_enabled: boolean;
   webrtc_play_enabled: boolean;
   offline_placeholder_url: string;
+  show_on_homepage: boolean;
   is_live: boolean;
   viewer_count: number;
   total_play_count: number;

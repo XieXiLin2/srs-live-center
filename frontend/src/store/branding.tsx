@@ -25,6 +25,9 @@ export interface BrandingInfo {
   site_name: string;
   logo_url: string;
   copyright: string;
+  icp_filing: string;
+  mps_filing: string;
+  moeicp_filing: string;
 }
 
 interface BrandingContextValue extends BrandingInfo {
@@ -40,6 +43,9 @@ const FALLBACK: BrandingInfo = {
   site_name: 'SRS Live Center',
   logo_url: '',
   copyright: '© SRS Live Center. All rights reserved.',
+  icp_filing: '',
+  mps_filing: '',
+  moeicp_filing: '',
 };
 
 const BrandingContext = createContext<BrandingContextValue>({

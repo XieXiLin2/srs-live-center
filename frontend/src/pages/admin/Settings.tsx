@@ -95,7 +95,7 @@ const Settings: React.FC = () => {
         <Paragraph type="secondary" style={{ marginTop: 0 }}>
           这些值用于页面左上角的 Logo / 站点名、页面标题后缀以及底部的版权文案。
           修改后会立刻生效，无需重启服务。页面标题会自动拼接为
-          <code> 当前页面 :: 站点名</code> 的格式。
+           <code>当前页面 :: 站点名</code> 的格式。页脚 Copyright 支持 HTML 标签（如 &lt;a&gt;、&lt;br&gt;）和换行。
         </Paragraph>
         {brandingLoading ? (
           <Spin />
@@ -142,6 +142,27 @@ const Settings: React.FC = () => {
                 placeholder="https://example.com/offline.mp4"
                 maxLength={1024}
               />
+            </Form.Item>
+            <Form.Item
+              label="工信部备案号"
+              name="icp_filing"
+              extra="例如：京ICP备12345678号-1。留空则不显示。"
+            >
+              <Input placeholder="京ICP备12345678号-1" maxLength={256} />
+            </Form.Item>
+            <Form.Item
+              label="公安备案号"
+              name="mps_filing"
+              extra="例如：京公网安备 11010502012345号。留空则不显示。会自动显示公安备案图标。"
+            >
+              <Input placeholder="京公网安备 11010502012345号" maxLength={256} />
+            </Form.Item>
+            <Form.Item
+              label="MoeICP 备案号"
+              name="moeicp_filing"
+              extra="例如：萌ICP备20231234号。留空则不显示。会自动显示 MoeICP 图标。"
+            >
+              <Input placeholder="萌ICP备20231234号" maxLength={256} />
             </Form.Item>
           </Form>
         )}

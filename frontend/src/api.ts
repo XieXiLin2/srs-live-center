@@ -220,6 +220,9 @@ export interface BrandingPayload {
   logo_url: string;
   copyright: string;
   offline_placeholder_url: string;
+  icp_filing: string;
+  mps_filing: string;
+  moeicp_filing: string;
 }
 export const brandingApi = {
   get: () => api.get<BrandingPayload>('/branding').then((r) => r.data),

@@ -116,6 +116,7 @@ const StreamDetail: React.FC = () => {
         chat_enabled: data.chat_enabled,
         webrtc_play_enabled: data.webrtc_play_enabled,
         offline_placeholder_url: data.offline_placeholder_url,
+        show_on_homepage: data.show_on_homepage,
       });
     } catch (e: unknown) {
       const err = e as { response?: { status?: number } };
@@ -173,6 +174,7 @@ const StreamDetail: React.FC = () => {
         chat_enabled: !!v.chat_enabled,
         webrtc_play_enabled: !!v.webrtc_play_enabled,
         offline_placeholder_url: v.offline_placeholder_url ?? '',
+        show_on_homepage: !!v.show_on_homepage,
       });
       setCfg(updated);
       message.success('已保存');
@@ -333,6 +335,14 @@ const StreamDetail: React.FC = () => {
                   >
                     <Input placeholder="https://example.com/offline.mp4" maxLength={1024} />
                   </Form.Item>
+                  <Form.Item
+                    name="show_on_homepage"
+                    label="在主页显示"
+                    valuePropName="checked"
+                    extra="关闭后此直播间不会在主页列表中显示，但仍可通过直接链接访问。"
+                  >
+                    <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+                  </Form.Item>
                   <Space>
                     <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={save}>
                       保存
@@ -356,7 +366,7 @@ const StreamDetail: React.FC = () => {
               <Card>
                 <Paragraph type="secondary">
                   以下推流地址由后端根据 <code>PUBLISH_BASE_URL</code>（若未配置则回退到
-                  <code> PUBLIC_BASE_URL</code>）生成。轮换推流密钥后，旧地址立即失效。
+                   <code>PUBLIC_BASE_URL</code>）生成。轮换推流密钥后，旧地址立即失效。
                 </Paragraph>
                 <Descriptions column={1} bordered size="small">
                   <Descriptions.Item label="推流密钥">
