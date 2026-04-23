@@ -66,6 +66,19 @@ const AppLayout: React.FC = () => {
     document.title = page ? `${page} :: ${site_name}` : site_name;
   }, [location.pathname, site_name]);
 
+  // Update favicon when logo URL changes
+  useEffect(() => {
+    if (logo_url) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = logo_url;
+    }
+  }, [logo_url]);
+
   const menuItems = [
     { key: '/', icon: <PlayCircleOutlined />, label: '直播' },
     ...(user?.is_admin
