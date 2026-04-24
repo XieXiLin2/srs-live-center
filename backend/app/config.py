@@ -90,6 +90,26 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     webrtc_play_enabled: bool = True
 
+    # WebRTC UDP port for media transport.
+    # This is the port SRS listens on for WebRTC media (RTP/RTCP) over UDP.
+    # Must match the port configured in SRS rtc_server.listen.
+    # Default: 8000
+    webrtc_udp_port: int = 8000
+
+    # WebRTC TCP port for media transport (optional).
+    # Only used when webrtc_protocol is "tcp" or "all".
+    # If empty, defaults to the same value as webrtc_udp_port.
+    # Must match the port configured in SRS rtc_server.tcp.
+    webrtc_tcp_port: int = 0
+
+    # WebRTC IP family: ipv4, ipv6, or all (both ipv4 and ipv6)
+    # Default: ipv4
+    webrtc_ip_family: str = "ipv4"
+
+    # WebRTC protocol: udp, tcp, or all (udp,tcp)
+    # Default: udp
+    webrtc_protocol: str = "udp"
+
     # ------------------------------------------------------------------
     # Offline placeholder (image or video shown when stream is offline).
     #

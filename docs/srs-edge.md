@@ -66,9 +66,20 @@ http_server {
 
 rtc_server {
     enabled on;
-    listen  8000;
+    # WebRTC UDP 端口，可通过环境变量 WEBRTC_UDP_PORT 配置
+    listen  $WEBRTC_UDP_PORT;
     # 将此处替换为 Edge 自己的公网 IP
     candidate $CANDIDATE;
+    
+    # IP 协议族：ipv4, ipv6, 或 all（同时启用 IPv4 和 IPv6）
+    ip_family $WEBRTC_IP_FAMILY;
+    
+    # 传输协议：udp, tcp, 或 all（同时支持 UDP 和 TCP）
+    protocol $WEBRTC_PROTOCOL;
+    
+    # TCP 端口（仅当 protocol 为 tcp 或 all 时需要）
+    # 可通过环境变量 WEBRTC_TCP_PORT 配置
+    # tcp $WEBRTC_TCP_PORT;
 }
 
 vhost __defaultVhost__ {
@@ -122,11 +133,16 @@ services:
       - "1935:1935"
       - "1985:1985"
       - "8080:8080"
-      - "8000:8000/udp"
+      - "${WEBRTC_UDP_PORT:-8000}:${WEBRTC_UDP_PORT:-8000}/udp"
+      - "${WEBRTC_TCP_PORT:-8000}:${WEBRTC_TCP_PORT:-8000}/tcp"
     volumes:
       - ./srs-edge.conf:/usr/local/srs/conf/srs.conf:ro
     environment:
       - CANDIDATE=${CANDIDATE:-}
+      - WEBRTC_UDP_PORT=${WEBRTC_UDP_PORT:-8000}
+      - WEBRTC_TCP_PORT=${WEBRTC_TCP_PORT:-8000}
+      - WEBRTC_IP_FAMILY=${WEBRTC_IP_FAMILY:-ipv4}
+      - WEBRTC_PROTOCOL=${WEBRTC_PROTOCOL:-udp}
 ```
 
 然后：
@@ -155,6 +171,10 @@ chmod +x srs-edge-setup.sh
 sudo ORIGIN_HOST=origin.example.com \
      ORIGIN_HTTP_BASE=https://origin.example.com \
      CANDIDATE=203.0.113.10 \
+     WEBRTC_UDP_PORT=8000 \
+     WEBRTC_TCP_PORT=8000 \
+     WEBRTC_IP_FAMILY=ipv4 \
+     WEBRTC_PROTOCOL=udp \
      ./srs-edge-setup.sh
 ```
 
@@ -165,6 +185,10 @@ sudo ORIGIN_HOST=origin.example.com \
 | `ORIGIN_HOST` | Origin 的 RTMP 地址，`host[:port]`，必填 | — |
 | `ORIGIN_HTTP_BASE` | Origin 的 HTTP 前缀，用于 `on_play` 回调 | `http://$ORIGIN_HOST` |
 | `CANDIDATE` | 本 Edge 的公网 IP（WebRTC 使用） | 自动探测 |
+| `WEBRTC_UDP_PORT` | WebRTC UDP 端口 | `8000` |
+| `WEBRTC_TCP_PORT` | WebRTC TCP 端口（仅当 protocol 为 tcp 或 all 时需要） | `8000` |
+| `WEBRTC_IP_FAMILY` | IP 协议族：ipv4, ipv6, 或 all | `ipv4` |
+| `WEBRTC_PROTOCOL` | 传输协议：udp, tcp, 或 all | `udp` |
 | `EDGE_DIR` | 部署目录 | `/opt/srs-edge` |
 
 ---

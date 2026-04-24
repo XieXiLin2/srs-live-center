@@ -51,13 +51,18 @@ services:
       - "1935:1935"               # RTMP 推流（外部推流者需可达）
       - "127.0.0.1:1985:1985"     # SRS HTTP API（仅供本机反代使用，不要公开暴露）
       - "127.0.0.1:8080:8080"     # HTTP-FLV / HLS（由外部 Nginx 反代到公网）
-      - "8000:8000/udp"           # WebRTC UDP（外部观众直连）
+      - "${WEBRTC_UDP_PORT:-8000}:${WEBRTC_UDP_PORT:-8000}/udp"  # WebRTC UDP（外部观众直连）
+      - "${WEBRTC_TCP_PORT:-8000}:${WEBRTC_TCP_PORT:-8000}/tcp"  # WebRTC TCP（仅当 WEBRTC_PROTOCOL 为 tcp 或 all 时需要）
       - "10080:10080/udp"         # SRT UDP
     volumes:
       - ./deploy/srs/srs.conf:/usr/local/srs/conf/srs.conf:ro
       - ./data/srs:/usr/local/srs/objs/nginx/html
     environment:
       - CANDIDATE=${CANDIDATE:-}
+      - WEBRTC_UDP_PORT=${WEBRTC_UDP_PORT:-8000}
+      - WEBRTC_TCP_PORT=${WEBRTC_TCP_PORT:-8000}
+      - WEBRTC_IP_FAMILY=${WEBRTC_IP_FAMILY:-ipv4}
+      - WEBRTC_PROTOCOL=${WEBRTC_PROTOCOL:-udp}
     # -----------------------------------------------------------------------
     # TCP keepalive — evict half-dead RTMP / HTTP-FLV clients within ~60s.
     #

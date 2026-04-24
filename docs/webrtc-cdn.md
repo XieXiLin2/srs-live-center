@@ -99,6 +99,10 @@ PUBLISH_SRT_PORT=10080
 
 # WebRTC 配置
 WEBRTC_PLAY_ENABLED=true
+WEBRTC_UDP_PORT=8000
+WEBRTC_TCP_PORT=0
+WEBRTC_IP_FAMILY=ipv4
+WEBRTC_PROTOCOL=udp
 CANDIDATE=<SRS 服务器公网 IP>
 ```
 
@@ -106,6 +110,10 @@ CANDIDATE=<SRS 服务器公网 IP>
 - `PUBLIC_BASE_URL`：主站地址，用于生成 WHEP 播放 URL 和 HTTP-FLV URL
 - `PUBLISH_BASE_URL`：推流站地址，用于生成 WHIP/RTMP/SRT 推流 URL
 - `SRS_HTTP_URL` 和 `SRS_API_URL`：后端内部转发地址，直接指向 SRS 容器，不走公网
+- `WEBRTC_UDP_PORT`：WebRTC UDP 端口，默认 8000，必须与 SRS 配置中的 `rtc_server.listen` 端口一致
+- `WEBRTC_TCP_PORT`：WebRTC TCP 端口，仅当 `WEBRTC_PROTOCOL` 为 `tcp` 或 `all` 时使用。设置为 0 时默认使用与 UDP 相同的端口
+- `WEBRTC_IP_FAMILY`：IP 协议族，可选 `ipv4`、`ipv6` 或 `all`（同时启用 IPv4 和 IPv6），默认 `ipv4`
+- `WEBRTC_PROTOCOL`：传输协议，可选 `udp`（默认）、`tcp` 或 `all`（同时支持 UDP 和 TCP）
 - `CANDIDATE`：SRS 服务器的公网 IP，用于 WebRTC ICE 候选交换
 
 ### 3. URL 生成逻辑
@@ -344,9 +352,23 @@ http_api {
 
 rtc_server {
     enabled         on;
+    # WebRTC UDP 端口，必须与环境变量 WEBRTC_UDP_PORT 一致
     listen          8000;
     # 必须配置为 SRS 服务器的公网 IP
     candidate       $CANDIDATE;
+    
+    # IP 协议族配置，必须与环境变量 WEBRTC_IP_FAMILY 一致
+    # 可选值: ipv4, ipv6, all (同时启用 IPv4 和 IPv6)
+    ip_family       ipv4;
+    
+    # 传输协议配置，必须与环境变量 WEBRTC_PROTOCOL 一致
+    # 可选值: udp, tcp, all (udp,tcp)
+    protocol        udp;
+    
+    # 仅当 protocol 为 tcp 或 all 时需要配置
+    # TCP 端口，必须与环境变量 WEBRTC_TCP_PORT 一致
+    # 如果 WEBRTC_TCP_PORT 为 0，则使用与 UDP 相同的端口
+    # tcp             8000;
 }
 
 vhost __defaultVhost__ {
