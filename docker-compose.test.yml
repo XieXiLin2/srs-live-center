@@ -68,7 +68,7 @@ services:
       - mock-oauth
 
   srs:
-    image: ossrs/srs:6
+    image: registry.cn-hangzhou.aliyuncs.com/ossrs/srs:6
     container_name: srs-live-center-test-srs
     restart: unless-stopped
     command: ["./objs/srs", "-c", "conf/srs.conf"]
