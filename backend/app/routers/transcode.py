@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.transcode import TranscodeNode, TranscodeProfile, TranscodeTask
-from app.routers.auth import require_admin
+from app.auth import require_admin
 
 router = APIRouter(prefix="/api/admin/transcode", tags=["transcode"])
 

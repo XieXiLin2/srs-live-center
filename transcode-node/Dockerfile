@@ -1,16 +1,10 @@
-FROM ubuntu:22.04
+FROM python:3.11-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install FFmpeg 7.x and dependencies
+# Install FFmpeg and system dependencies
 RUN apt-get update && apt-get install -y \
-    software-properties-common \
-    curl \
-    && add-apt-repository ppa:savoury1/ffmpeg7 \
-    && apt-get update && apt-get install -y \
     ffmpeg \
-    python3 \
-    python3-pip \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
