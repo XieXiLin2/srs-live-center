@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   transcode-node:
     image: ghcr.io/xiexilin2/srs-live-center/transcode:latest
