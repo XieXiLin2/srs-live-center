@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   transcode-node:
-    build: .
+    image: ghcr.io/xiexilin2/srs-live-center/transcode:latest
     container_name: transcode-node-01
     restart: unless-stopped
     environment:
